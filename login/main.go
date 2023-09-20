@@ -8,26 +8,19 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
 	"github.com/klauspost/compress/zstd"
-	"github.com/nxadm/tail"
 )
 
-var loginMainMenu, _ = hex.DecodeString("7b226578706572696d656e74616c7468726f77696e6722")
-var loginStage2, _ = hex.DecodeString("7b2264656661756c74636c69656e7470726f66696c656964223a2264656661756c7422")
-var loginReady = make(chan []byte, 1)
-var ovr_id = []byte{}
+var loginMainMenu, _ = hex.DecodeString("0a207be6a91eb4bd")
+var loginStage2, _ = hex.DecodeString("708dfc21422a77fb")
 var upgrader = websocket.Upgrader{}
 
 func main() {
 	lsh := http.NewServeMux()
 	lsh.HandleFunc("/", login)
 
-	go findIdFromLogs()
 	http.ListenAndServe("0.0.0.0:8000", lsh)
 }
 
@@ -45,11 +38,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		switch {
-		case bytes.Contains(message, loginMainMenu):
+		case bytes.Contains(message[8:16], loginMainMenu):
 			fmt.Println("Got Login request, Waiting for OVR ID...")
-			ovr_id = <-loginReady
 
-			fmt.Printf("OVR ID Found: %s\n", fmt.Sprintf("%016x", revArray(ovr_id)))
+			ovr_id := message[48:56]
 			resBytes, _ := hex.DecodeString("f640bb78a2e78cbb47ce0c0da9c1aca52000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0400000000000000") //
 			resBytes = append(resBytes, ovr_id...)
 			c.WriteMessage(mt, resBytes)
@@ -64,6 +56,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Sent auth login_settings")
 
 		case bytes.Contains(message, loginStage2):
+			ovr_id := message[48:56]
+
 			prefix, _ := hex.DecodeString("f640bb78a2e78cbb778dfc37503a76fb")
 			suffix, _ := hex.DecodeString("0400000000000000")
 			resBytes := constructZSTDPacket("./json/login_userinfo.json", prefix, append(suffix, ovr_id...))
@@ -127,70 +121,4 @@ func revArray(arr []byte) []byte {
 		reversed[i] = arr[length-1-i]
 	}
 	return reversed
-}
-
-func findIdFromLogs() {
-	for {
-		logpath := "../../_local/r14logs"
-		logFile := ""
-		echo, err := os.Open("./echovr.exe")
-		echo.Close()
-		if err != nil {
-			log.Fatalln("Mock login server *must* run in the same folder as echovr.exe. To bypass, create any empty file with the same name.")
-		}
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			log.Fatalln("bruh moment detected", err)
-		}
-		defer watcher.Close()
-		if err := watcher.Add(logpath); err != nil {
-			log.Fatalln("bruh moment detected", err)
-		}
-		select {
-		case event := <-watcher.Events:
-			if strings.Contains(event.Name, "r14(client)") {
-				logFile = event.Name
-				break
-			}
-		case err := <-watcher.Errors:
-			log.Fatalln(err)
-		}
-		t, err := tail.TailFile(logFile, tail.Config{Follow: true, ReOpen: true, Poll: true})
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for line := range t.Lines {
-			if !strings.Contains(line.Text, "[LOGIN] Logging") {
-				continue
-			}
-			possibleIDs := strings.Split(line.Text, " ")
-			loggedOvrID := ""
-
-			for i := 0; i < len(possibleIDs); i++ {
-				if len(possibleIDs[i]) < 24 || len(possibleIDs[i]) > 25 {
-					continue
-				}
-				loggedOvrID = strings.TrimSuffix(strings.Split(possibleIDs[i], "-")[2], ":")
-				break
-			}
-
-			if len(loggedOvrID) != 16 {
-				log.Fatalf("Ovr ID invalid?: %s", loggedOvrID)
-			}
-
-			ovridInt, _ := strconv.Atoi(loggedOvrID)
-			ovridBytes, _ := hex.DecodeString(fmt.Sprintf("%016x", ovridInt))
-
-			for {
-				if len(ovr_id) < 8 {
-					ovr_id = append(ovr_id, 0x00)
-				} else {
-					break
-				}
-			}
-
-			loginReady <- revArray(ovridBytes)
-			break
-		}
-	}
 }
