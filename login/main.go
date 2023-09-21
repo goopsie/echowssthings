@@ -39,7 +39,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		}
 		switch {
 		case bytes.Contains(message[8:16], loginMainMenu):
-			fmt.Println("Got Login request, Waiting for OVR ID...")
+			fmt.Println("Got Login request")
 
 			ovr_id := message[48:56]
 			resBytes, _ := hex.DecodeString("f640bb78a2e78cbb47ce0c0da9c1aca52000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0400000000000000") //

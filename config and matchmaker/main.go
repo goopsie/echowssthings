@@ -8,16 +8,32 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/klauspost/compress/zstd"
 )
 
-var configMainMenu, _ = hex.DecodeString("7b7b2274797065223a226d61696e5f6d656e75222c226964223a226d61696e5f6d656e75227d00")
-var matchmakeMMenu, _ = hex.DecodeString("7b2267616d6574797065223a3330313036393334363835313930313330322c226170706964223a2231333639303738343039383733343032227d")
-var configStage2, _ = hex.DecodeString("7b2274797065223a226163746976655f626174746c655f706173735f736561736f6e222c226964223a22626174746c655f706173735f736561736f6e5f30305f696e76616c6964227d")
-var matchmakerServerList, _ = hex.DecodeString("f640bb78a2e78cbb4fae333004d04760")
+// message type from header
+var magic, _ = hex.DecodeString("f640bb78a2e78cbb")
+
+var configBeginning, _ = hex.DecodeString("7843eb370b9f8682")
+
+var matchmakeMMenu, _ = hex.DecodeString("f5a39a81012a2c31")
+var matchmakerServerList, _ = hex.DecodeString("4fae333004d04760")
+var matchmakerServerRegistrationRQ, _ = hex.DecodeString("5a10250f85daf270")
+var matchmakerOvrIDK, _ = hex.DecodeString("051ac8a0b2faf29a")
+
+var transactionGetEP, _ = hex.DecodeString("3c57854c45fcd01b")
+
 var upgrader = websocket.Upgrader{}
+
+type matchmakerServerConfig struct {
+	IpInternal string `json:"internal_ip"`
+	IpExternal string `json:"external_ip"`
+	Port       int    `json:"port"`
+}
 
 func main() {
 	csh := http.NewServeMux()
@@ -28,7 +44,7 @@ func main() {
 	tsh.HandleFunc("/", transaction)
 
 	go http.ListenAndServe("0.0.0.0:8001", msh)
-	go http.ListenAndServe("0.0.0.0:8002", tsh) // i don't think we have websocket data for this ):
+	go http.ListenAndServe("0.0.0.0:8002", tsh) // we have scarce data for this
 	http.ListenAndServe("0.0.0.0:8003", csh)
 }
 
@@ -39,28 +55,45 @@ func config(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
+	fmt.Println("Echo client has connected to Config server")
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			continue
+			fmt.Println("Echo client has disconnected from Config server")
+			break
 		}
-		fmt.Println("Message in config:")
+		log.Println("Message in config:")
 		fmt.Println(hex.Dump(message))
-		headerPrefix, _ := hex.DecodeString("f640bb78a2e78cbb12d07b6f58afcdb9")
+		messageType, _ := hex.DecodeString("12d07b6f58afcdb9")
+		configAcknowledge, _ := hex.DecodeString("e4ee6bc73a96e643")
 		headerSuffix, _ := hex.DecodeString("7b1d0e4427ee09157b1d0e4427ee0915")
 
 		switch {
-		case bytes.Contains(message, configMainMenu):
-			resBytes := constructZSTDPacket("./json/config_echopass_textures.json", headerPrefix, headerSuffix)
+		case bytes.Contains(message[8:16], configBeginning):
+			resBytes := constructZSTDPacket("./json/config_echopass_textures.json", messageType, headerSuffix)
 			c.WriteMessage(mt, resBytes)
-			resBytes, _ = hex.DecodeString("f640bb78a2e78cbbe4ee6bc73a96e643010000000000000010")
-			c.WriteMessage(mt, resBytes)
-			log.Printf("Sent config_echopass_textures.json")
+			c.WriteMessage(mt, constructPacket([]byte{0x10}, configAcknowledge, []byte{}))
+			fmt.Print("Sent config_echopass_textures.json\n\n")
+		default:
+			fmt.Print("Recieved unknown message.\n\n")
 
-		case bytes.Contains(message, configStage2):
-			resBytes, _ := hex.DecodeString("")
-			c.WriteMessage(mt, resBytes)
-			fmt.Printf("Config Replying with: \n %s\n", hex.Dump(resBytes))
+			// have to figure out another way to do this. e.g. reading the response 🤢
+			//case bytes.Contains(message, configEchoshop):
+			//	resBytes := constructZSTDPacket("./json/config_echopass_info.json", headerPrefix, headerSuffix)
+			//	c.WriteMessage(mt, resBytes)
+			//	resBytes, _ = hex.DecodeString("f640bb78a2e78cbbe4ee6bc73a96e643010000000000000004")
+			//	c.WriteMessage(mt, resBytes)
+			//	fmt.Print("Sent config_echopass_info.json\n\n")
+			//
+			//	resBytes = constructZSTDPacket("./json/config_echoshop_1.json", headerPrefix, headerSuffix)
+			//	c.WriteMessage(mt, resBytes)
+			//	c.WriteMessage(mt, constructPacket([]byte{0x4}, configAcknowledge, []byte{}))
+			//	fmt.Print("Sent config_echoshop_1.json\n\n")
+			//
+			//	resBytes = constructZSTDPacket("./json/config_echoshop_2.json", headerPrefix, headerSuffix)
+			//	c.WriteMessage(mt, resBytes)
+			//	c.WriteMessage(mt, c.WriteMessage(mt, constructPacket([]byte{0x4}, configAcknowledge, []byte{})))
+			//	fmt.Print("Sent config_echoshop_2.json\n\n")
 		}
 	}
 }
@@ -72,78 +105,174 @@ func matchmaking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
+	fmt.Println("Echo client has connected to Matchmaker server")
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			continue
+			fmt.Println("Echo client has disconnected from Matchmaker server")
+			break
 		}
-		fmt.Println("Message in Matchmaking:")
+		log.Println("Message in Matchmaking:")
 		fmt.Println(hex.Dump(message))
 
 		switch {
-		case bytes.Contains(message, matchmakerServerList):
+		case bytes.Contains(message[8:16], matchmakerServerRegistrationRQ):
+			resBytes, _ := hex.DecodeString("f640bb78a2e78cbb0e11e30e65e34d6d0100000000000000ff") // nothing ):
+			c.WriteMessage(mt, resBytes)
+			fmt.Print("Attempting to respond to matchmaker registration request.\n\n")
+
+		case bytes.Contains(message[8:16], matchmakerOvrIDK):
+			ovrID := message[len(message)-8:]
+			mtype_MMOvr1, _ := hex.DecodeString("d9fbe0f76a8571ff")
+			mdata_MMOvr1, _ := hex.DecodeString("010000000000000000000000000000000000000000000000049690bc9035874d9ccb3b4a9c463abe")
+			c.WriteMessage(mt, constructPacket(mdata_MMOvr1, mtype_MMOvr1, []byte{}))
+
+			mtype_MMOvr2, _ := hex.DecodeString("688958f8e1cab9a1")
+			mdata_MMOvr2, _ := hex.DecodeString("049690bc9035874d9ccb3b4a9c463abe")
+			mdata_MMOvr2Suffix, _ := hex.DecodeString("ffff000000000000")
+			c.WriteMessage(mt, constructPacket(mdata_MMOvr2, mtype_MMOvr2, ovrID))
+			c.WriteMessage(mt, constructPacket(append(mdata_MMOvr2, mdata_MMOvr2Suffix...), incHeader(mtype_MMOvr2, 1), ovrID))
+
+			mtype_MMOvr3, _ := hex.DecodeString("e4ee6bc73a96e643")
+			c.WriteMessage(mt, constructPacket([]byte{0x30}, mtype_MMOvr3, []byte{}))
+
+			fmt.Print("OVR Matchmaker messages sent\n\n")
+
+		case bytes.Contains(message[8:16], matchmakerServerList):
 			mlen := len(message)
-			servBytes := message[(32) : mlen-4] // send back only server (WILL BREAK IF >1 SERVER IS RETURNED. WILL FIX LATER, SORT BY PING INSTEAD OF DISCARD.)
-			// will have to len() final data after magic number, 24 bytes in?
-			prefix1, _ := hex.DecodeString("f640bb78a2e78cbb0e11e30e65e34d6d080100000000000076cfddcff99c2d044ab45615d403ea4bbff73bcc25673b85")
-			prefix2, _ := hex.DecodeString("f640bb78a2e78cbb0f11e30e65e34d6d180100000000000076cfddcff99c2d044ab45615d403ea4bbff73bcc25673b85df489cdd95c4f34eb3174fd6364f329d")
+			servBytes := readServersFromJson("./json/matchmaker_config.json")
+			port := servBytes[len(servBytes)-4 : len(servBytes)-2]
+			if mlen <= 32 {
+				fmt.Print("No servers responded to Echo's pings. Ignoring and attempting connection regardless.\n\n")
+				servBytes = servBytes[:len(servBytes)-4]
+			} else {
+				servBytes = message[(32) : mlen-4] // send back only server (WILL BREAK IF >1 SERVER IS RETURNED. WILL FIX LATER, SORT BY PING INSTEAD OF DISCARD.)
+			}
+
+			// will have to len() final data after magic number, 24 bytes in? 							1556B44A-03D4-4BEA-BFF7-3BCC25673B85
+			prefix1, _ := hex.DecodeString("f640bb78a2e78cbb0e11e30e65e34d6d080100000000000076cfddcff99c2d0400000000000000000000000000000000")
+			prefix2, _ := hex.DecodeString("f640bb78a2e78cbb0f11e30e65e34d6d180100000000000076cfddcff99c2d0400000000000000000000000000000000df489cdd95c4f34eb3174fd6364f329d")
 			suffix, _ := hex.DecodeString("000000008300008000088000030100800008800063dc51bc822859801a2bd72296a830099f30c08b99848bd475eeaf7da128dcd74e29f43a2288575073434200aa4aa8b6bdde00698c0644cb4b88ebf3bddbce0715d4d087b0254352457082acd7e7a4b97c9b190e0d778a6973b394be14e3cd9ee8afa4e6a0a25180c387cdca80e45c7fb031db035a2f0f611a3934efb8b734e03db66f8e9ee5c8138271e20edfa853148b5c037e6ef4ffc448b9217c0b9de45a60a59f0765d511d126911f702a5e688bb438a61bb37351fe59016e0ed7d9e75d1da6a10675f48a18f20a58e94cacda4e")
+			// todo: figure out what on earth suffix is :(
 
-			resBytes := append(prefix1, append(servBytes, append([]byte{0x1A, 0x88, 0xFF, 0xFF}, suffix...)...)...)  // first server, port 6792
-			resBytes2 := append(prefix2, append(servBytes, append([]byte{0x1A, 0x88, 0xFF, 0xFF}, suffix...)...)...) // first server, port 6792
+			resBytes := append(prefix1, append(servBytes, append(port, append([]byte{0xFF, 0xFF}, suffix...)...)...)...)  // first server, port 6792
+			resBytes2 := append(prefix2, append(servBytes, append(port, append([]byte{0xFF, 0xFF}, suffix...)...)...)...) // first server, port 6792
 
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(resBytes))
 			c.WriteMessage(mt, resBytes)
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(resBytes2))
 			c.WriteMessage(mt, resBytes2)
+			fmt.Print("Sent game server connect request to Echo\n\n")
 
-			unknownMessage, _ := hex.DecodeString("f640bb78a2e78cbbe4ee6bc73a96e64301000000000000001a")
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(unknownMessage))
-			c.WriteMessage(mt, unknownMessage)
+			messageType, _ := hex.DecodeString("e4ee6bc73a96e643")
+			c.WriteMessage(mt, constructPacket([]byte{0x1a}, messageType, []byte{}))
 
-		case bytes.Contains(message, matchmakeMMenu): // read ips from json and construct automatically later
-			resBytes, _ := hex.DecodeString("f640bb78a2e78cbbcbbebfda33cf288f040000000000000000000000")
-			c.WriteMessage(mt, resBytes)
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(resBytes))
-			resBytes, _ = hex.DecodeString("f640bb78a2e78cbbf3ebbf19875fbffa140000000000000000000400e80300000acbcd4d7f0000011A880000") // one ip, 127.0.0.1:6792
-			c.WriteMessage(mt, resBytes)
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(resBytes))
-			resBytes, _ = hex.DecodeString("f640bb78a2e78cbb6c6c16f2c4d35a8dc10400000000000000000400e80300007b22726567696f6e735b305d7c726567696f6e6964223a22307838453841384141433831453737314237222c22726567696f6e735b305d7c656e64706f696e74223a2267616d656c6966742e61702d6e6f727468656173742d312e616d617a6f6e6177732e636f6d222c22726567696f6e735b315d7c726567696f6e6964223a22307838453841384141433831464137314234222c22726567696f6e735b315d7c656e64706f696e74223a2267616d656c6966742e61702d736f757468656173742d322e616d617a6f6e6177732e636f6d222c22726567696f6e735b325d7c726567696f6e6964223a22307838453841384141433831464137314237222c22726567696f6e735b325d7c656e64706f696e74223a2267616d656c6966742e61702d736f757468656173742d312e616d617a6f6e6177732e636f6d222c22726567696f6e735b335d7c726567696f6e6964223a22307836464239413131353237464141304631222c22726567696f6e735b335d7c656e64706f696e74223a2267616d656c6966742e75732d656173742d312e616d617a6f6e6177732e636f6d222c22726567696f6e735b345d7c726567696f6e6964223a22307836464239413131353237464141304632222c22726567696f6e735b345d7c656e64706f696e74223a2267616d656c6966742e75732d656173742d322e616d617a6f6e6177732e636f6d222c22726567696f6e735b355d7c726567696f6e6964223a22307836464239413131353237464141364631222c22726567696f6e735b355d7c656e64706f696e74223a227261642d6368696361676f2d656e64706f696e742d6c622d313639313736343934332e75732d656173742d312e656c622e616d617a6f6e6177732e636f6d222c22726567696f6e735b365d7c726567696f6e6964223a22307836464239413131353237464141364632222c22726567696f6e735b365d7c656e64706f696e74223a227261642d64616c6c61732d656e64706f696e742d6c622d313639313736343934332e75732d656173742d312e656c622e616d617a6f6e6177732e636f6d222c22726567696f6e735b375d7c726567696f6e6964223a22307836464239413131353237464141364633222c22726567696f6e735b375d7c656e64706f696e74223a227261642d686f7573746f6e2d656e64706f696e742d6c622d3132333435363738392e75732d656173742d312e656c622e616d617a6f6e6177732e636f6d222c22726567696f6e735b385d7c726567696f6e6964223a22307836464239413131353237464142324631222c22726567696f6e735b385d7c656e64706f696e74223a2267616d656c6966742e75732d776573742d312e616d617a6f6e6177732e636f6d222c22726567696f6e735b395d7c726567696f6e6964223a22307836464239413131353337464341364631222c22726567696f6e735b395d7c656e64706f696e74223a2267616d656c6966742e65752d63656e7472616c2d312e616d617a6f6e6177732e636f6d222c22726567696f6e735b31305d7c726567696f6e6964223a22307836464239413131353337464342324632222c22726567696f6e735b31305d7c656e64706f696e74223a2267616d656c6966742e65752d776573742d322e616d617a6f6e6177732e636f6d227d")
-			c.WriteMessage(mt, resBytes)
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(resBytes))
+		case bytes.Contains(message, matchmakeMMenu):
+			mtype_matchmakerStart, _ := hex.DecodeString("cbbebfda33cf288f")
+			c.WriteMessage(mt, constructPacket([]byte{0x00, 0x00, 0x00, 0x00}, mtype_matchmakerStart, []byte{}))
+			mtype_serverList, _ := hex.DecodeString("f3ebbf19875fbffa")
+			serverDataSuffix, _ := hex.DecodeString("00000400e8030000")
+			serverData := readServersFromJson("./json/matchmaker_config.json")
+
+			c.WriteMessage(mt, constructPacket(serverData, mtype_serverList, serverDataSuffix))
+			fmt.Print("Sent server list to Echo for ping.\n\n")
+
+			mtype_gameliftList, _ := hex.DecodeString("6c6c16f2c4d35a8d")
+			c.WriteMessage(mt, constructJsonPacket("./json/matchmaker_region-endpoints.json", mtype_gameliftList, serverDataSuffix))
+			fmt.Print("Sent list of regions & Gamelift endpoints.\n\n")
+		default:
+			log.Println("Recieved unknown message in Matchmaking:")
+			fmt.Println(hex.Dump(message))
 		}
 	}
 }
 
-func transaction(w http.ResponseWriter, r *http.Request) { // do we have comms for this?
+func transaction(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Print("upgrade:", err)
 		return
 	}
 	defer c.Close()
+	fmt.Println("Echo client has connected to Transaction")
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			continue
+			fmt.Println("Echo client has disconnected from Transaction")
+			break
 		}
-		fmt.Println("Message in Transaction:")
+		log.Println("Message in Transaction:")
 		fmt.Println(hex.Dump(message))
 		switch {
-		case bytes.Contains(message, []byte{}):
-			resBytes, _ := hex.DecodeString("")
-			c.WriteMessage(mt, resBytes)
-			fmt.Printf("Replying with: \n %s\n", hex.Dump(resBytes))
-		}
+		case bytes.Contains(message[8:16], transactionGetEP):
+			messageType, _ := hex.DecodeString("828a506542c2ab0d")
+			headerSuffix, _ := hex.DecodeString("0400000000000000")
+			headerSuffix = append(headerSuffix, message[48:56]...) // ovr_id
 
+			resBytes := constructJsonPacket("./json/transaction_EPcount.json", messageType, headerSuffix)
+			c.WriteMessage(mt, resBytes)
+			messageType, _ = hex.DecodeString("e4ee6bc73a96e643")
+			c.WriteMessage(mt, constructPacket([]byte{0x12}, messageType, []byte{}))
+			fmt.Print("Sent transaction_EPcount.json\n\n")
+		default:
+			fmt.Print("Recieved unknown message in Transaction\n\n")
+			fmt.Println(hex.Dump(message))
+		}
 	}
 }
 
-func constructZSTDPacket(path string, prefix []byte, suffix []byte) []byte {
+func readServersFromJson(path string) []byte {
+	// 7f0000017f0000011A880000
+	// 4 bytes for each ip, 2 bytes for port, 2 bytes padding
+	file, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("Failed to open server list: %s\n", path)
+		return []byte{}
+	}
+	var sInfo matchmakerServerConfig
+	json.Unmarshal(file, &sInfo)
+	finalBytes := []byte{}
+	intIP := strings.Split(sInfo.IpInternal, ".")
+	extIP := strings.Split(sInfo.IpExternal, ".")
+
+	for i := 0; i < len(intIP); i++ { // i think this is gonna break
+		ipInt, _ := strconv.Atoi(intIP[i])
+		ipByte, _ := hex.DecodeString(fmt.Sprintf("%02x", ipInt))
+		finalBytes = append(finalBytes, ipByte...)
+	}
+	for i := 0; i < len(extIP); i++ { // i think this is gonna break
+		ipInt, _ := strconv.Atoi(extIP[i])
+		ipByte, _ := hex.DecodeString(fmt.Sprintf("%02x", ipInt))
+		finalBytes = append(finalBytes, ipByte...)
+	}
+	portB, _ := hex.DecodeString(fmt.Sprintf("%04x", sInfo.Port))
+	return append(finalBytes, append(portB, []byte{0x00, 0x00}...)...)
+
+}
+
+func constructPacket(data []byte, messageType []byte, suffix []byte) []byte {
+	lenBytes, _ := hex.DecodeString(fmt.Sprintf("%016x", len(data)+len(suffix)))
+	lenBytes_LE := revArray(lenBytes)
+	return append(magic, append(messageType, append(lenBytes_LE, append(suffix, data...)...)...)...)
+}
+
+func constructJsonPacket(path string, messageType []byte, suffix []byte) []byte {
+	fBytes, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("Failed to open json file.\n%s", err)
+	}
+
+	buffer := new(bytes.Buffer)
+	if err := json.Compact(buffer, fBytes); err != nil {
+		fmt.Println(err)
+	}
+	jsonBytes := buffer.Bytes()
+	return constructPacket(jsonBytes, messageType, suffix)
+}
+
+func constructZSTDPacket(path string, messageType []byte, suffix []byte) []byte {
 	zstdBytes, decompSize := zstdCompressJson(path)
 	lenBytes, _ := hex.DecodeString(fmt.Sprintf("%016x", len(zstdBytes)+len(suffix)+len(decompSize)))
 	lenBytes_LE := revArray(lenBytes)
-	return append(prefix, append(lenBytes_LE, append(suffix, append(decompSize, zstdBytes...)...)...)...)
+	return append(magic, append(messageType, append(lenBytes_LE, append(suffix, append(decompSize, zstdBytes...)...)...)...)...)
 }
 
 func zstdCompressJson(path string) ([]byte, []byte) {
@@ -170,7 +299,21 @@ func zstdCompressJson(path string) ([]byte, []byte) {
 	return fBytesZSTD, revArray(decompSize)
 }
 
-func revArray(arr []byte) []byte {
+func incHeader(header []byte, inc uint64) []byte {
+	value, err := strconv.ParseUint(hex.EncodeToString(revArray(header)), 16, 64)
+	if err != nil {
+		fmt.Printf("Conversion failed: %s\n", err)
+	}
+	value = value + inc
+	revHeader, _ := hex.DecodeString(fmt.Sprintf("%08x", value))
+	finalHeader := revArray(revHeader)
+	if len(finalHeader) < 8 {
+		finalHeader = append(finalHeader, 0x00)
+	}
+	return finalHeader
+}
+
+func revArray(arr []byte) []byte { // very convenient :)
 	length := len(arr)
 	reversed := make([]byte, length)
 
