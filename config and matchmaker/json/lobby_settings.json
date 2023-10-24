@@ -1,0 +1,109 @@
+{
+    "combat_unlocked": true,
+    "combat_ability_sensor_unlocked": true,
+    "combat_weapon_rifle_unlocked": true,
+    "combat_weapon_scout_unlocked": true,
+    "combat_weapon_rocket_unlocked": true,
+    "parties_unlocked": true,
+    "combat_spectate_unlocked": true,
+    "combat_weapon_chain_unlocked": true,
+    "combat_grenade_loc_unlocked": true,
+    "arena_event_poster_unlock": false,
+    "combat_grenade_arc_unlocked": true,
+    "combat_grenade_stun_unlocked": true,
+    "combat_weapon_magnum_unlocked": true,
+    "arena_public_party_limit": 8,
+    "combat_grenade_burst_unlocked": true,
+    "combat_weapon_assault_unlocked": true,
+    "allowed_levels": {
+        "echo_arena_tournament": [
+            "mpl_arena_a"
+        ],
+        "echo_arena_practice_ai": [
+            "mpl_arena_a"
+        ],
+        "social_2.0_private": [
+            "mpl_lobby_b2"
+        ],
+        "echo_arena": [
+            "mpl_arena_a"
+        ],
+        "echo_arenacombat": [
+            "tst_gpl_r15_arenacombat"
+        ],
+        "echo_arena_private_ai": [
+            "mpl_arena_a"
+        ],
+        "echo_demo": [
+            "mpl_arena_a"
+        ],
+        "echo_combat": [
+            "mpl_combat_fission",
+            "mpl_combat_combustion",
+            "mpl_combat_dyson",
+            "mpl_combat_gauss"
+        ],
+        "echo_combat_tournament": [
+            "mpl_combat_fission",
+            "mpl_combat_combustion",
+            "mpl_combat_dyson",
+            "mpl_combat_gauss"
+        ],
+        "social_2.0": [
+            "mpl_lobby_b2"
+        ],
+        "echo_demo_public": [
+            "mpl_arena_a"
+        ],
+        "echo_arena_public_ai": [
+            "mpl_arena_a"
+        ],
+        "echo_arena_private": [
+            "mpl_arena_a"
+        ],
+        "echo_combat_private": [
+            "mpl_combat_fission",
+            "mpl_combat_combustion",
+            "mpl_combat_dyson",
+            "mpl_combat_gauss"
+        ]
+    },
+    "arena_branding_enabled": false,
+    "arena_parties_unlocked": true,
+    "combat_private_unlocked": true,
+    "combat_ability_wraith_unlocked": true,
+    "combat_weapon_blaster_unlocked": true,
+    "combat_grenade_det_unlocked": true,
+    "arena_public_unlocked": true,
+    "combat_parties_unlocked": true,
+    "arena_private_unlocked": true,
+    "arena_unlocked": true,
+    "combat_public_unlocked": true,
+    "arena_spectate_unlocked": true,
+    "store_unlocked": true,
+    "combat_ability_heal_unlocked": true,
+    "xp_bonus_amount_first_win_of_the_week": 1500,
+    "combat_ability_buff_unlocked": true,
+    "combat_ability_smoke_unlocked": true,
+    "combat_weapon_smg_unlocked": true,
+    "combat_ability_shield_unlocked": true,
+    "config_data": {
+        "active_battle_pass_season": {
+            "id": "battle_pass_season_00_invalid",
+            "starttime": 1577908800,
+            "endtime": 2236881600
+        },
+        "active_store_entry": {
+            "id": "store_entry_0036",
+            "starttime": 1675103401,
+            "endtime": 1690911000
+        },
+        "active_store_featured_entry": {
+            "id": "store_featured_entry_0013",
+            "starttime": 1675103402,
+            "endtime": 1690911001
+        }
+    },
+    "xp_bonus_amount_first_game_of_the_day": 600,
+    "global_xp_multiplier": 1
+}
