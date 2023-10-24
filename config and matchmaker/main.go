@@ -135,7 +135,6 @@ func matchmaking(w http.ResponseWriter, r *http.Request) {
 			prefix1, _ := hex.DecodeString("f640bb78a2e78cbb0e11e30e65e34d6d080100000000000076cfddcff99c2d0400000000000000000000000000000000")
 			prefix2, _ := hex.DecodeString("f640bb78a2e78cbb0f11e30e65e34d6d180100000000000076cfddcff99c2d0400000000000000000000000000000000df489cdd95c4f34eb3174fd6364f329d")
 			suffix, _ := hex.DecodeString("000000008300008000088000030100800008800063dc51bc822859801a2bd72296a830099f30c08b99848bd475eeaf7da128dcd74e29f43a2288575073434200aa4aa8b6bdde00698c0644cb4b88ebf3bddbce0715d4d087b0254352457082acd7e7a4b97c9b190e0d778a6973b394be14e3cd9ee8afa4e6a0a25180c387cdca80e45c7fb031db035a2f0f611a3934efb8b734e03db66f8e9ee5c8138271e20edfa853148b5c037e6ef4ffc448b9217c0b9de45a60a59f0765d511d126911f702a5e688bb438a61bb37351fe59016e0ed7d9e75d1da6a10675f48a18f20a58e94cacda4e")
-			// part of suffix is aes encryption key - discord @shersal
 
 			resBytes := append(prefix1, append(servBytes, append(port, append([]byte{0xFF, 0xFF}, suffix...)...)...)...)  // first server, port 6792
 			resBytes2 := append(prefix2, append(servBytes, append(port, append([]byte{0xFF, 0xFF}, suffix...)...)...)...) // first server, port 6792
