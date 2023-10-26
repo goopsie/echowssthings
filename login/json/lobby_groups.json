@@ -1,0 +1,44 @@
+{
+    "group": [
+        {
+            "channeluuid": "937CE604-5DC7-431F-812B-C7C25B4B37B6",
+            "priority": 2,
+            "rules_version": 1,
+            "rules": "1. No screaming, yelling, shouting or anything that could be considered excessive or meaningless noise.\n2. Keep any smacktalk in the realm of friendly banter. No degrading, or talking down towards other players.\n3. Carry yourself with dignity, and respect the dignity of others.\n4. Have fun! (Taking the game seriously is important, but it's not worth fighting over.)",
+            "description": "Whether you're looking for a social Lobby to talk about the meta or interested in highly competitive matches, this is the group for you. Players looking to improve their skills, learn new ones, or participate in community tournaments are welcome to join.",
+            "link": "https://discord.gg/H7qzk7e",
+            "name": "COMPETITIVE GAMERS",
+            "_rad": true
+        },
+        {
+            "channeluuid": "EF663D3F-D947-484A-BA7E-8C5ED7FED1A6",
+            "priority": 3,
+            "rules_version": 1,
+            "rules": "1. This is both a casual and competitive lobby for all Combat players and those interested in Echo Combat.\n2. No screaming, yelling, shouting, or anything that could be considered excessive or meaningless noise.\n3. Respect fellow community members and their desire to have a casual or competitive gaming experience with like-minded gamers.\n4. Try to resolve issues in a mature manner and respect everyoneâs individual point of view. Maturity is not a numeric value, but rather the display and result of your actions.\n5. Keep any smack talk in the realm of friendly banter. No degrading or talking down towards other players.\n6. Carry yourself with dignity and respect the dignity of others.\n7. Have fun, and please don't hog the Fury Transport!",
+            "description": "Combat players can compete in the Echo Combat Skirmish Zone or test out gear while matchmaking in the Training Area, discuss the current meta or preferred load out for certain maps, and meet up with other players to form teams for matches or competitive play.",
+            "link": "https://discord.gg/H7qzk7e",
+            "name": "ECHO COMBAT PLAYERS",
+            "_rad": true
+        },
+        {
+            "channeluuid": "90DD4DB5-B5DD-4655-839E-FDBE5F4BC0BF",
+            "priority": 0,
+            "rules_version": 1,
+            "rules": "1. No sexually explicit actions or comments.\n2. No sexist, racist, or discriminatory behavior or language.\n3. No harassing, bullying, or threatening others.\n4. No hacking, cheating, exploiting, or exposing player info.\n5. No unsportsmanlike conduct or trolling.\n6. No promoting real-world violence or illegal activity.\n7. No impersonating Ready At Dawn, Oculus, or Facebook employees.",
+            "description": "This group is for the classic Echo VR Lobby you know and love, welcoming players of all types. Players can meet up with friends, find new players to team up with, or discuss upcoming Echo VR events in an environment open to everyone.",
+            "link": "https://discord.gg/H7qzk7e",
+            "name": "PLAYGROUND",
+            "_rad": true
+        },
+        {
+            "channeluuid": "DD9C48DF-C495-4EF3-B317-4FD6364F329D",
+            "priority": 1,
+            "rules_version": 1,
+            "rules": "1. Maturity is not a numeric value, but a result of your actions. Members of this community are still fun people, but they're looking for a community who conducts themselves in a more controlled manner.\n2. No screaming, yelling, shouting or anything that could be considered excessive or meaningless noise.\n3. Respect your fellow community members and their desire to have a casual gaming experience with other like-minded gamers. Try to resolve issues in a mature manner, and respect everyone's individual point of view.\n4. Have fun! (Even though this is casual gaming, take it seriously. Always try to win for your team.)",
+            "description": "Looking to escape some of the noise or mischief of the Playground social Lobby? This group is for you. Casual, mature gamers can party up with friends for a few chill matches or socialize in the Lobby with other players looking to unwind after a long day.",
+            "link": "https://discord.gg/H7qzk7e",
+            "name": "CASUAL MATURE GAMERS",
+            "_rad": true
+        }
+    ]
+}
