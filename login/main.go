@@ -35,7 +35,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			continue
+			log.Println("Echo client has disconnected from Login server.")
+			break
 		}
 		switch {
 		case bytes.Contains(message[8:16], loginMainMenu):
@@ -47,7 +48,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			c.WriteMessage(mt, resBytes)
 
 			fmt.Println("Sent login confirmation")
-			resBytes, _ = hex.DecodeString("f640bb78a2e78cbbe4ee6bc73a96e64301000000000000004b")
+			resBytes, _ = hex.DecodeString("f640bb78a2e78cbbe4ee6bc73a96e64301000000000000004b") // COlPrEfIxSTcpConnectionUnrequireEvent - 0x4b
 			c.WriteMessage(mt, resBytes)
 			fmt.Println("Sent auth acknowledgement")
 			resBytes, _ = hex.DecodeString("f640bb78a2e78cbbf1552163c3e25bed8b01000000000000c603000000000000789c7d92dd6ea3301085dfc5d7d1ca8696fcbcca6a359a98218c626cd636d9ad2adebd3649d3a466f706a47386ef1c337e178c234cd6387da6561ca29f68233c0d2e121877823fe82ddb5310870e4d78f682d38ce6ee0c18750ff16d24082369ee58c3a20d78269f08ef02393f7b172284a9ebf8af3864edf1db34f75390ee1da0278b304e47934069ead746fc9e6822e0545428295fc4bc11cbd40a7591ff032e7175c67d9ee93befa617c0ab0ed50f590255066a371c3196c09bbedef06616c44accf3d30a068a9e7558595c927b183d05b29aee3b227b4924c317fa4c5e9603d798c1b56954b41cf068d2752880052f9c79bcb505b291a3a121bd41f7a4cf6bb5c87be7bf6e9376b6e313b418971da28ea91a245a02c1882140200cce6673f909a5055202db0b1ace8543441f230fa9a27add6ef772b793329fbbbd8a555537bb9d6aa4cc77e71a17a2f394ebfbb77bce839602eae61bbad9be2a59bf48f58056cd5eee55da5281ee08e3e4a95dcd78365398aaff1156ad85a9799e3f005cf04fce")
