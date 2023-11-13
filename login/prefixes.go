@@ -15,6 +15,7 @@ var ( // Login
 	SNSLoggedInUserProfileRequest, _ = hex.DecodeString("708dfc21422a77fb")
 	SNSUpdateProfile, _              = hex.DecodeString("1544f23f9aa1546d")
 	SNSChannelInfoRequest, _         = hex.DecodeString("e0245751588e7590")
+	SNSOtherUserProfileRequest, _    = hex.DecodeString("b20c053120173112")
 	// client -> server
 
 	// server -> client
@@ -24,6 +25,7 @@ var ( // Login
 	SNSUpdateProfileSuccess, _       = hex.DecodeString("57f7ce01d09154f2")
 	SNSDocumentSuccess, _            = hex.DecodeString("09b5b72f78fd7fd0")
 	SNSChannelInfoResponse, _        = hex.DecodeString("c564899fcd168f6c")
+	SNSOtherUserProfileSuccess, _    = hex.DecodeString("b50c052732073012")
 )
 
 var ( // document prefixes

@@ -33,7 +33,7 @@
                 "completed": true
             }
         },
-        "weapon": "assault",
+        "weapon": "smg",
         "ghost": {
             "users": [
                 "OVR-ORG-3928294433921188",
@@ -100,14 +100,14 @@
             "community_values_version": 1,
             "setup_version": 1
         },
-        "xplatformid": "OVR-ORG-3909821432425139",
+        "xplatformid": "OVR-ORG-3215295051848411",
         "customization": {
             "new_unlocks_poi_version": 1,
             "battlepass_season_poi_version": 0,
             "store_entry_poi_version": 49,
             "clear_new_unlocks_version": 1
         },
-        "grenade": "det",
+        "grenade": "loc",
         "weaponarm": 1,
         "mute": {
             "users": [
@@ -262,7 +262,7 @@
             }
         },
         "teamname": "amongus",
-        "ability": "heal"
+        "ability": "buff"
     },
     "server": {
         "stats": {
@@ -2158,7 +2158,7 @@
                 "rwd_tint_0004": true
             }
         },
-        "publisher_lock": "rad15_live",
+        "publisher_lock": "fuck_boz",
         "loadout": {
             "instances": {
                 "unified": {
@@ -2238,7 +2238,7 @@
             }
         },
         "logintime": 1681615365,
-        "xplatformid": "OVR-ORG-3909821432425139",
+        "xplatformid": "OVR-ORG-3215295051848411",
         "updatetime": 1681615365,
         "creationtime": 1588695732,
         "maybestale": true
