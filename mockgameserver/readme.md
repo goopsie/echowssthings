@@ -1,1 +1,0 @@
-the repo name is echoWSthings but i'm uploading this anyway lol
