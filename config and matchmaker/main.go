@@ -23,6 +23,11 @@ type matchmakerServerConfig struct {
 	Port       int    `json:"port"`
 }
 
+type configData struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
 func main() {
 	csh := http.NewServeMux()
 	csh.HandleFunc("/", config)
@@ -56,30 +61,18 @@ func config(w http.ResponseWriter, r *http.Request) {
 
 		switch {
 		case bytes.Contains(message[8:16], SNSConfigRequestv2):
-			resBytes := constructZSTDPacket("./json/config_echopass_textures.json", SNSConfigSuccessv2, headerSuffix)
-			c.WriteMessage(mt, resBytes)
-			c.WriteMessage(mt, constructPacket([]byte{0x10}, STcpConnectionUnrequireEvent, []byte{}))
-			fmt.Print("Sent config_echopass_textures.json\n\n")
+			for _, v := range bytes.Split(message, magic) {
+				if len(v) == 0 {
+					continue
+				}
+				confReq := configData{}
+				json.Unmarshal(v[17:len(v)-1], &confReq)
+				fmt.Printf("Got config request ID: %s & Type: %s\n", confReq.ID, confReq.Type)
+				c.WriteMessage(mt, constructZSTDPacket("./json/config_"+confReq.Type+".json", SNSConfigSuccessv2, headerSuffix))
+				c.WriteMessage(mt, constructPacket([]byte{0x10}, STcpConnectionUnrequireEvent, []byte{}))
+			}
 		default:
-			fmt.Print("Recieved unknown message.\n\n")
-
-			// have to figure out another way to do this. e.g. reading the response 🤢
-			//case bytes.Contains(message, configEchoshop):
-			//	resBytes := constructZSTDPacket("./json/config_echopass_currentinfo.json", headerPrefix, headerSuffix)
-			//	c.WriteMessage(mt, resBytes)
-			//	resBytes, _ = hex.DecodeString("f640bb78a2e78cbbe4ee6bc73a96e643010000000000000004")
-			//	c.WriteMessage(mt, resBytes)
-			//	fmt.Print("Sent config_echopass_currentinfo.json\n\n")
-			//
-			//	resBytes = constructZSTDPacket("./json/config_echoshop_1.json", headerPrefix, headerSuffix)
-			//	c.WriteMessage(mt, resBytes)
-			//	c.WriteMessage(mt, constructPacket([]byte{0x4}, configAcknowledge, []byte{}))
-			//	fmt.Print("Sent config_echoshop_1.json\n\n")
-			//
-			//	resBytes = constructZSTDPacket("./json/config_echoshop_2.json", headerPrefix, headerSuffix)
-			//	c.WriteMessage(mt, resBytes)
-			//	c.WriteMessage(mt, c.WriteMessage(mt, constructPacket([]byte{0x4}, configAcknowledge, []byte{})))
-			//	fmt.Print("Sent config_echoshop_2.json\n\n")
+			fmt.Print("Recieved unknown message in Config.\n\n")
 		}
 	}
 }
@@ -98,12 +91,10 @@ func matchmaking(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Echo client has disconnected from Matchmaker server")
 			break
 		}
-		log.Println("Message in Matchmaking:")
-		fmt.Println(hex.Dump(message))
 
 		switch {
 		case bytes.Contains(message[8:16], SNSLobbyPendingSessionCancel):
-			fmt.Print("Matchmaker registration request recieved. Ignoring - We don't have data for this\n\n")
+			fmt.Print("Echo client cancelled matchmaking.\n\n")
 
 		case bytes.Contains(message[8:16], SNSLobbyPlayerSessionsRequestv5):
 			ovrID := message[len(message)-8:]
@@ -134,7 +125,7 @@ func matchmaking(w http.ResponseWriter, r *http.Request) {
 			// will have to len() final data after magic number, 24 bytes in? 							1556B44A-03D4-4BEA-BFF7-3BCC25673B85 lobby uuid
 			prefix1, _ := hex.DecodeString("f640bb78a2e78cbb0e11e30e65e34d6d080100000000000076cfddcff99c2d0400000000000000000000000000000000")
 			prefix2, _ := hex.DecodeString("f640bb78a2e78cbb0f11e30e65e34d6d180100000000000076cfddcff99c2d0400000000000000000000000000000000df489cdd95c4f34eb3174fd6364f329d")
-			suffix, _ := hex.DecodeString("000000008300008000088000030100800008800063dc51bc822859801a2bd72296a830099f30c08b99848bd475eeaf7da128dcd74e29f43a2288575073434200aa4aa8b6bdde00698c0644cb4b88ebf3bddbce0715d4d087b0254352457082acd7e7a4b97c9b190e0d778a6973b394be14e3cd9ee8afa4e6a0a25180c387cdca80e45c7fb031db035a2f0f611a3934efb8b734e03db66f8e9ee5c8138271e20edfa853148b5c037e6ef4ffc448b9217c0b9de45a60a59f0765d511d126911f702a5e688bb438a61bb37351fe59016e0ed7d9e75d1da6a10675f48a18f20a58e94cacda4e")
+			suffix, _ := hex.DecodeString("000000008300008000088000030100800008800063dc51bc82285980FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF73434200aa4aa8b6bdde00698c0644cb4b88ebf3bddbce0715d4d087b0254352FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFc387cdca80e45c7fFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8b5c037e6ef4ffc448b9217c0b9de45a60a59f0765d511d126911f702a5e688bFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
 			resBytes := append(prefix1, append(servBytes, append(port, append([]byte{0xFF, 0xFF}, suffix...)...)...)...)  // first server, port 6792
 			resBytes2 := append(prefix2, append(servBytes, append(port, append([]byte{0xFF, 0xFF}, suffix...)...)...)...) // first server, port 6792
@@ -157,6 +148,7 @@ func matchmaking(w http.ResponseWriter, r *http.Request) {
 			fmt.Print("Sent list of regions & Gamelift endpoints.\n\n")
 		default:
 			log.Println("Recieved unknown message in Matchmaking")
+			hex.Dump(message)
 		}
 	}
 }
